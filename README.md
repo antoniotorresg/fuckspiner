@@ -1,4 +1,4 @@
-# fuckspiner
+# FuckSpiner
 Plugin para WordPress para leer un feed tanto en español como inglés, spinearlo de forma automatica con la herramienta de spinea.me y crear el post a la categoría asignada
 
 # Instalación
