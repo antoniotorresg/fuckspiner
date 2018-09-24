@@ -59,6 +59,42 @@ function check_exists_post( $titulo ) {
     }
 }
 
+function extract_img_url($text) { 
+	preg_match_all('/http(s)?:\/\/[a-z0-9-]+(.[a-z0-9-]+)*(:[0-9]+)?(\/.*)?/', $text, $matches);
+
+	return $matches[0][0]; 
+}
+
+function Generate_Featured_Image( $image_url, $post_id  ){
+	$upload_dir = wp_upload_dir();
+	$image_data = file_get_contents($image_url);
+	$filename = basename($image_url);
+	if (wp_mkdir_p($upload_dir['path'])) {
+		$file = $upload_dir['path'] . '/' . $filename;
+	} else {                                   
+		$file = $upload_dir['basedir'] . '/' . $filename;
+		
+	}
+	file_put_contents($file, $image_data);
+
+	$wp_filetype = wp_check_filetype($filename, null );
+	$attachment = array(
+	    'post_mime_type' 	=> $wp_filetype['type'],
+	    'post_title' 		=> sanitize_file_name($filename),
+	    'post_content' 		=> '',
+	    'post_status' 		=> 'inherit',
+	    'alt'   			=> trim(strip_tags( get_post_meta($attach_id, '_wp_attachment_image_alt', true) ))
+
+
+	  );
+	$attach_id = wp_insert_attachment( $attachment, $file, $post_id );
+	require_once(ABSPATH . 'wp-admin/includes/image.php');
+	$attach_data = wp_generate_attachment_metadata( $attach_id, $file );
+	$res1 = wp_update_attachment_metadata( $attach_id, $attach_data );
+	$res2 = set_post_thumbnail( $post_id, $attach_id );
+
+}
+
 
 //* Creamos el objeto del feed
 $rss = new RssReader ($feed);
@@ -77,6 +113,7 @@ foreach ($rss->get_items () as $item){
 	if (check_exists_post( $titulo ) == false) {
 	
 		if ($descripcion != '') {
+
 			$result = curl_spineame($email, $apikey, $descripcion);
 			if ($result->success == 'true') {
 
@@ -90,7 +127,13 @@ foreach ($rss->get_items () as $item){
 				);
 				 
 				// Insertamos el post en la base de datos
-				wp_insert_post( $my_post );
+				$post_id = wp_insert_post( $my_post ); 
+
+				// Asignamos la imagen destacada al post
+				$url_imagen = extract_img_url($descripcion);
+				Generate_Featured_Image( $url_imagen,   $post_id );
+				//update_post_meta($attach_id, '_wp_attachment_image_alt', $title3);
+
 
 			}
 		}
